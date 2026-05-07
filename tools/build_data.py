@@ -717,6 +717,7 @@ def main():
         )
         clean = dict(dataset)
         clean.pop("_traceRecords", None)
+        clean.pop("browseRecords", None)
         clean["recordsUrl"] = f"data/records/{dataset['key']}.json"
         public_datasets.append(clean)
 
@@ -730,7 +731,6 @@ def main():
         "yearSeries": build_year_series(event_records),
         "entityIndex": build_entity_index(event_records),
         "geoNetwork": build_geo_network(event_records),
-        "waterLifelines": build_water_lifelines(datasets),
         "totals": {
             "datasets": len(public_datasets),
             "records": sum(item["records"] for item in public_datasets),

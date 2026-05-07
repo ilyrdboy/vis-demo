@@ -37,6 +37,7 @@ const nodes = computed(() => {
       y,
       color: colorMap[node.group] || '#8a8175',
       groupLabel: groupLabels[node.group] || '关键环节',
+      labelLines: labelLines(node.label),
       explanation: node.explanation || `${node.label}是“${props.item.title}”转折链条中的${groupLabels[node.group] || '关键'}环节。`,
     }
   })
@@ -69,6 +70,13 @@ function hideTooltip() {
   hoveredId.value = ''
   tooltip.value.visible = false
 }
+
+function labelLines(label) {
+  const text = String(label || '')
+  if (text.length <= 4) return [text]
+  if (text.length <= 6) return [text.slice(0, 3), text.slice(3)]
+  return [text.slice(0, 4), text.slice(4, 8), text.slice(8)].filter(Boolean)
+}
 </script>
 
 <template>
@@ -93,7 +101,7 @@ function hideTooltip() {
           :key="index"
           class="causal-link"
           :class="{ muted: hoveredId && link.source.id !== hoveredId && link.target.id !== hoveredId }"
-          :d="`M ${link.source.x + 54} ${link.source.y} C ${(link.source.x + link.target.x) / 2} ${link.source.y}, ${(link.source.x + link.target.x) / 2} ${link.target.y}, ${link.target.x - 54} ${link.target.y}`"
+          :d="`M ${link.source.x + 66} ${link.source.y} C ${(link.source.x + link.target.x) / 2} ${link.source.y}, ${(link.source.x + link.target.x) / 2} ${link.target.y}, ${link.target.x - 66} ${link.target.y}`"
         />
 
         <g
@@ -101,13 +109,27 @@ function hideTooltip() {
           :key="node.id"
           class="causal-node"
           :class="{ active: node.id === hoveredId, muted: hoveredId && node.id !== hoveredId }"
+          role="button"
+          tabindex="0"
           @mouseenter="showTooltip(node, $event)"
           @mousemove="moveTooltip"
           @mouseleave="hideTooltip"
+          @focus="hoveredId = node.id"
+          @blur="hideTooltip"
         >
-          <circle :cx="node.x" :cy="node.y" r="52" :fill="node.color" />
-          <text :x="node.x" :y="node.y - 5" text-anchor="middle">{{ node.label.slice(0, 4) }}</text>
-          <text :x="node.x" :y="node.y + 16" text-anchor="middle">{{ node.label.slice(4) }}</text>
+          <title>{{ node.groupLabel }}：{{ node.label }}</title>
+          <rect class="node-hit" :x="node.x - 72" :y="node.y - 44" width="144" height="88" rx="10" />
+          <rect class="node-card" :x="node.x - 62" :y="node.y - 36" width="124" height="72" rx="8" :fill="node.color" />
+          <text class="node-group-label" :x="node.x" :y="node.y - 15" text-anchor="middle">{{ node.groupLabel }}</text>
+          <text
+            v-for="(line, lineIndex) in node.labelLines"
+            :key="`${node.id}-${lineIndex}`"
+            :x="node.x"
+            :y="node.y + 10 + lineIndex * 17"
+            text-anchor="middle"
+          >
+            {{ line }}
+          </text>
         </g>
       </svg>
 

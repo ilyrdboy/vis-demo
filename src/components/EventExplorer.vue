@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { withoutEllipsis } from '../utils/textFormat'
 
 const props = defineProps({
@@ -9,6 +9,8 @@ const props = defineProps({
 
 const selectedType = ref('全部')
 const selectedPeriod = ref('全部')
+const currentPage = ref(1)
+const pageSize = 6
 
 const types = computed(() =>
   ['全部', ...Array.from(new Set(props.records.map((record) => record.type)))].filter(Boolean),
@@ -25,12 +27,16 @@ const matchingRecords = computed(() =>
     .filter((record) => selectedPeriod.value === '全部' || record.period === selectedPeriod.value),
 )
 
-const filteredRecords = computed(() =>
+const sortedRecords = computed(() =>
   matchingRecords.value
     .slice()
-    .sort((a, b) => b.year - a.year)
-    .slice(0, 18),
+    .sort((a, b) => b.year - a.year),
 )
+const totalPages = computed(() => Math.max(1, Math.ceil(sortedRecords.value.length / pageSize)))
+const pageRecords = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return sortedRecords.value.slice(start, start + pageSize)
+})
 
 function changeType() {
   if (!periods.value.includes(selectedPeriod.value)) {
@@ -41,6 +47,18 @@ function changeType() {
 function yearLabel(year) {
   return year < 0 ? `前${Math.abs(year)}` : year
 }
+
+function page(delta) {
+  currentPage.value = Math.min(totalPages.value, Math.max(1, currentPage.value + delta))
+}
+
+watch([selectedType, selectedPeriod], () => {
+  currentPage.value = 1
+})
+
+watch(totalPages, (pages) => {
+  if (currentPage.value > pages) currentPage.value = pages
+})
 </script>
 
 <template>
@@ -77,13 +95,21 @@ function yearLabel(year) {
       </div>
     </div>
 
+    <div class="event-pager">
+      <span>显示 {{ pageRecords.length }} / {{ sortedRecords.length }} 条，页 {{ currentPage }} / {{ totalPages }}</span>
+      <div>
+        <button type="button" :disabled="currentPage === 1" @click="page(-1)">上一页</button>
+        <button type="button" :disabled="currentPage === totalPages" @click="page(1)">下一页</button>
+      </div>
+    </div>
+
     <div class="event-list">
-      <article v-for="record in filteredRecords" :key="record.id" class="event-row">
+      <article v-for="record in pageRecords" :key="record.id" class="event-row">
         <small>{{ yearLabel(record.year) }} / {{ record.period }} / {{ record.type }} / {{ record.datasetLabel }}</small>
         <strong>{{ withoutEllipsis(record.title) }}</strong>
         <p>{{ withoutEllipsis(record.rawText) }}</p>
       </article>
-      <div v-if="!filteredRecords.length" class="empty-state">
+      <div v-if="!pageRecords.length" class="empty-state">
         当前筛选下没有可展示记录
       </div>
     </div>

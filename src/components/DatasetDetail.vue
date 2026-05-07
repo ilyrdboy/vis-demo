@@ -36,7 +36,7 @@ const pageRecords = computed(() => {
   const start = (currentPage.value - 1) * pageSize
   return records.value.slice(start, start + pageSize)
 })
-const visibleSheets = computed(() => props.dataset.sheets.filter((sheet) => sheet.rows > 1).slice(0, 8))
+const visibleSheets = computed(() => props.dataset.sheets.filter((sheet) => sheet.rows > 1))
 const titleThreshold = 16
 
 async function loadRecords(dataset) {
